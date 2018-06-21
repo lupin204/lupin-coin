@@ -8,3 +8,6 @@ Crypto-currency - coin with Node.js
     - morgan
     - body-parser
     - nodemon
+
+- vscode extension
+    - REST Client ( Huachao Mao )
