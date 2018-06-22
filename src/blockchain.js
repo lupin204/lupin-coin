@@ -20,7 +20,7 @@ const genesisBlock = new Block(
 
 let blockchain = [genesisBlock];
 
-const getLastBlock = () => blockchain[blockchain.length -1];
+const getNewestBlock = () => blockchain[blockchain.length -1];
 
 const getTimestamp = () => new Date().getTime() / 1000;
 
@@ -32,7 +32,7 @@ const createHash = (index, previousHash, timestamp, data) =>
     ).toString();
 
 const createNewBlock = data => {
-    const previousBlock = getLastBlock();
+    const previousBlock = getNewestBlock();
     const newBlockIndex = previousBlock.index + 1;
     const newTimestamp = getTimestamp();
     const newHash = createHash(newBlockIndex, previousBlock.hash, newTimestamp, data);
@@ -46,9 +46,9 @@ const getBlockHash = (block) => createHash(block.index, block.previousHash, bloc
 
 // check block contents (index and hash)
 // 새로 push할 block(candidate, new block)과 / 블록체인 배열 제일 마지막 block(latest, previous block)을 검증
-const isNewBlockValid = (candidateBlock, latestBlock) => {
+const isBlockValid = (candidateBlock, latestBlock) => {
     // check this block's valid structure
-    if (!isNewStructureValid(candidateBlock)) {
+    if (!isBlockStructureValid(candidateBlock)) {
         console.log('The Candidate block structure is not valid');
         return false;
     // check sequential index
@@ -68,7 +68,7 @@ const isNewBlockValid = (candidateBlock, latestBlock) => {
 }
 
 // check block structures
-const isNewStructureValid = (block) => {
+const isBlockStructureValid = (block) => {
     return (
         typeof block.index === 'number' 
         && typeof block.hash === 'string' 
@@ -91,7 +91,7 @@ const isChainValid = (candidateChain) => {
     }
     // 2번째(i=1) 블록부터 체크 ( 1번째(i=0) 블록은 genesis block이라 previous hash = null 이기때문에 검증하지 않음 )
     for (let i=1; i<candidateChain.length; i++) {
-        if (!isNewBlockValid(candidateChain[i], candidateChain[i-1])) {
+        if (!isBlockValid(candidateChain[i], candidateChain[i-1])) {
             return false;
         }
     }
@@ -112,15 +112,18 @@ const replaceChain = candidateChain => {
 }
 
 const addBlockToChain = candidateBlock => {
-    if (isNewBlockValid(candidateBlock, getLastBlock())) {
+    if (isBlockValid(candidateBlock, getNewestBlock())) {
         getBlockchain().push(candidateBlock);
         return true;
     } else {
         return false;
     }
-}
+}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
 
 module.exports = {
+    getNewestBlock,
     getBlockchain,
-    createNewBlock
+    createNewBlock,
+    isBlockStructureValid,
+    addBlockToChain
 }
