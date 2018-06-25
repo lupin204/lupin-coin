@@ -1,8 +1,14 @@
-const WebSockets = require('ws');
+const WebSockets = require('ws'),
     Blockchain = require('./blockchain');
 
 
-const { getNewestBlock, isBlockStructureValid } = Blockchain;
+const { 
+    getNewestBlock, 
+    isBlockStructureValid,
+    replaceChain,
+    getBlockchain,
+    addBlockToChain
+ } = Blockchain;
 
 const sockets = [];
 
@@ -17,19 +23,21 @@ const getLatest = () => {
         type: GET_LATEST,
         data: null
     };
-};
+}
 const getAll = () => {
     return {
         type: GET_ALL,
         data: null
     };
-};
+}
 const blockchainResponse = (data) => {
     return {
         type: BLOCKCHAIN_RESPONSE,
         data: data
     };
-};
+}
+
+const getSockets = () => sockets;
 
 // server : Express HTTP server
 const startP2PServer = (server) => {
@@ -65,10 +73,12 @@ const handleSocketMessages = (ws) => {
             return;     // just exit this function
         }
         console.log(message);
-        switch(message.type) {
+        switch (message.type) {
             case GET_LATEST:
                 sendMessage(ws, responseLatest());
-                //sendMessage(ws, getNewestBlock());
+                break;
+            case GET_ALL:
+                sendMessage(ws, responseAll());
                 break;
             case BLOCKCHAIN_RESPONSE:
                 const receivedBlocks = message.data;
@@ -87,6 +97,7 @@ const handleBlockchainResponse = (receivedBlocks) => {
         return;
     }
     const latestBlockReceived = receivedBlocks[receivedBlocks.length -1];
+    console.log(latestBlockReceived);
     if (!isBlockStructureValid(latestBlockReceived)) {
         console.log('The block structure of the block received is not valid');
         return;
@@ -95,11 +106,14 @@ const handleBlockchainResponse = (receivedBlocks) => {
     const newestBlock = getNewestBlock();
     if (latestBlockReceived.index > newestBlock.index) {
         // 상대방이 나보다 1만큼 앞선다면 내꺼에 하나 추가하여 싱크
-        if (newEstBlock.hash === latestBlockReceived.previousHash) {
-            addBlockToChain(latestBlockReceived);
+        if (newestBlock.hash === latestBlockReceived.previousHash) {
+            // 블록 추가되었으면 모든 peer도 자기꺼에 내꺼 하나씩 추가하도록 모두에게 알림.
+            if(addBlockToChain(latestBlockReceived)) {
+                broadcastNewBlock();
+            }
         // 상대방이 나보다 2이상 앞선다면(previousHash로 비교가 불가하면) 블록 전체를 가져옴
         } else if (receivedBlocks.length === 1) {
-
+            sendMessageToAll(getAll());
         // 2이상 앞서면서, 이미 여러개 가지고있으면 블록체인을 교체
         } else {
             replaceChain(receivedBlocks);
@@ -109,7 +123,13 @@ const handleBlockchainResponse = (receivedBlocks) => {
 
 const sendMessage = (ws, message) => ws.send(JSON.stringify(message));
 
+const sendMessageToAll = (message) => sockets.forEach(ws => sendMessage(ws, message));
+
 const responseLatest = () => blockchainResponse([getNewestBlock()]);
+
+const responseAll = () => blockchainResponse(getBlockchain());
+
+const broadcastNewBlock = () => sendMessageToAll(responseLatest());
 
 const handleSocketError = (ws) => {
     const closeSocketConnection = (ws) => {
@@ -129,7 +149,8 @@ const connectToPeers = newPeer => {
 
 module.exports = {
     startP2PServer,
-    connectToPeers
+    connectToPeers,
+    broadcastNewBlock
 }
 
 

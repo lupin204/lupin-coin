@@ -9,7 +9,7 @@ const { startP2PServer, connectToPeers } = P2P;
 
 const PORT = process.env.HTTP_PORT || 3000;
 
-const app = express();
+const app = express(); 
 app.use(bodyParser.json());
 app.use(morgan("combined"));
 
