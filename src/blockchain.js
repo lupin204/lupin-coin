@@ -166,12 +166,21 @@ const isChainValid = (candidateChain) => {
     return true;
 }
 
+// 블록체인의 난이도를 체크
+// [4,5,2,4,6,7, ...] -> [4^2, 5^2, 2^2, 4^2, 6^2, 7^2, ...] -> (4^2 + 5^2 + 6^2 + 7^2 + ...) = Number
+const sumDifficulty = (anyBlockchain) =>
+    anyBlockchain
+        .map(block => block.difficulty)
+        .map(difficulty => Math.pow(2, difficulty))
+        .reduce((a, b) => a + b)
+
 /*
-기존 블록체인보다 새로운 블록체인 길이가 더 길면 새것으로 교체
+기존 블록체인보다 새로운 블록체인 길이가 더 길면 새것으로 교체 (x)
+--> 기존 블록체인보다 새로운 블록체인의 난이도가 더 높으면 새것으로 교체 (o)
 새 블록체인을 검증(Genesis block이 같고, 각각의 블록들이 모두 valid)하여 이상없으면..
 */
 const replaceChain = candidateChain => {
-    if (isChainValid(candidateChain) && candidateChain.length > getBlockchain().length) {
+    if (isChainValid(candidateChain) && sumDifficulty(candidateChain) > sumDifficulty(getBlockchain())) {
         blockchain = candidateChain;
         return true;
     } else {
