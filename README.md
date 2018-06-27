@@ -9,6 +9,9 @@ Crypto-currency - coin with Node.js
     - body-parser
     - nodemon
     - ws
+    - hex-to-binary
+    - elliptic
+        -  ECC(elliptic-curve cryptography) 타원곡선암호
 
 - vscode extension
     - REST Client ( Huachao Mao )
