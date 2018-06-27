@@ -1,4 +1,10 @@
-const CryptoJS = require('crypto-js');
+const CryptoJS = require('crypto-js'),
+    EC = require('elliptic').ec,
+    utils = require('./utils');
+
+
+// init EC - ECDSA (Elliptic Curve Digital Signature Algorithm) - ECC를 이용한 signature
+const ec = new EC('secp256k1');
 
 class TxOut {
     constructor(address, amount) {
@@ -31,9 +37,9 @@ class Transaction {
 }
 
 class UTxOut {
-    constructor(uTxOutId, uTxOutIndex, address, amount) {
-        this.uTxOutId = uTxOutId
-        this.uTxOutIndex = uTxOutIndex;
+    constructor(txOutId, txOutIndex, address, amount) {
+        this.txOutId = txOutId
+        this.txOutIndex = txOutIndex;
         this.address = address;
         this.amount = amount;
     }
@@ -54,4 +60,33 @@ const getTxId = (tx) => {
         .reduce((a, b) => a + b, "");
     return CryptoJS.SHA256(txInsContent + txOutContent).toString();
 }
+
+const findUTxOut = (txOutId, txOutIndex, uTxOutList) => {
+    return uTxOutList.find(uTxOut => uTxOut.txOutId === txOutId && uTxOut.txOutIndex === txOutIndex);
+}
+
+const signTxIn = (tx, txInIndex, privateKey, uTxOut) => {
+    const txIn = tx.txIns[txInIndex];
+    const dataToSign = tx.id;
+    // referenced unspent transaction output - in the unspent transaction output arrays
+    const referencedUTxOut = findUTxOut(txIn.txOutId, txIn.txOutIndex, uTxOuts);
+    //쓸 돈이 없는 경우
+    if (referencedUTxOut === null) {
+        return;
+    }
+
+    const key = ec.keyFromPrivate(privateKey, 'hex');
+    const signature = utils.toHexString(key.sign(dataToSign).toDER());
+    return signature;
+}
+
+const updateUTxOuts = (newTxs, uTxOutList) => {
+    const newTxOuts = newTxs.map(tx => {
+        tx.txOuts.map((txOut, index) => {
+            new UTxOut(tx.id, index, txOut.address, txOut.amount);
+        })
+    });
+    
+}
+
 
