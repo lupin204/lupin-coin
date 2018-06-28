@@ -85,7 +85,10 @@ const updateUTxOuts = (newTxs, uTxOutList) => {
         tx.txOuts.map((txOut, index) => {
             new UTxOut(tx.id, index, txOut.address, txOut.amount);
         })
-    });
+    })
+    .reduce((a, b) => a.contact(b), []);
+
+    const spentTxOuts = null;
     
 }
 
