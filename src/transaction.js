@@ -6,6 +6,11 @@ const CryptoJS = require('crypto-js'),
 // init EC - ECDSA (Elliptic Curve Digital Signature Algorithm) - ECC를 이용한 signature
 const ec = new EC('secp256k1');
 
+/*
+Transaction_Output
+amount = how many coins have they.
+address = where they belong to.
+*/
 class TxOut {
     constructor(address, amount) {
         this.address = address;
@@ -13,8 +18,8 @@ class TxOut {
     }
 }
 
-// 이전 트랜잭션에서 사용되지 않은 아웃풋
 /*
+Transaction_Input (Unspent Transaction Output)
 uTxOutId = unspent transaction output ID -> a hash of content - for evaluating transaction.
 uxOutIndex -> just for finding transaction. 1, 2, 3, ...
 signature
@@ -50,6 +55,10 @@ let uTxOuts =[];
 
 
 // id = txIn array + txOut array => make hash
+/*
+[25,40,13].reduce((a,b) => a+b) = 25+40+13 = 78
+[25,40,13].reduce((a,b) => a+b, "") = "254013"    // reduce(callbackFn, initialValue_첫번째_인수로_사용되는_값)
+*/
 const getTxId = (tx) => {
     const txInsContent = tx.txIns
         .map(txIn => txIn.uTxOutId + txIn.txOutIndex)
@@ -88,7 +97,9 @@ const updateUTxOuts = (newTxs, uTxOutList) => {
     })
     .reduce((a, b) => a.contact(b), []);
 
-    const spentTxOuts = null;
+    const spentTxOuts = newTxs.map(tx => tx.txIns)
+        .reduce((a, b) => a.contact(b), [])
+        .map(txIn => new UTxOut(txIn.txOutId, txIn.txOutIndex, "", 0));
     
 }
 
