@@ -109,5 +109,33 @@ const updateUTxOuts = (newTxs, uTxOutList) => {
 }
 
 
-
+//------------------------------
+// check validation of tx.
+const isTxInStructureValid = (txIn) => {
+    // to-do
+    return true;
+}
+const isTxOutStructureValid = (txOut) => {
+    // to-do
+    return true;
+}
+const isTxStructureValid = (tx) => {
+    if (typeof tx.id !== 'string') {
+        console.log('Tx ID is not valid');
+        return false;
+    } else if (!(tx.txIns instanceof Array)) {
+        console.log('The TxIns are not an array');
+        return false;
+    } else if (!isTxInStructureValid(tx.txIns)) {
+        console.log('The structure of one of the txIn is not valid');
+        return false;
+    } else if (!(tx.txOuts instanceof Array)) {
+        console.log('The TxOuts are not an array');
+        return false;
+    } else if (!isTxOutStructureValid(tx.txOuts)) {
+        console.log('The structure of one of the txOut is not valid');
+    } else {
+        return true;
+    }
+}
 
