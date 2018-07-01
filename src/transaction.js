@@ -112,8 +112,17 @@ const updateUTxOuts = (newTxs, uTxOutList) => {
 //------------------------------
 // check validation of tx.
 const isTxInStructureValid = (txIn) => {
-    // to-do
-    return true;
+    if (txIn === null) {
+        return false;
+    } else if (typeof txIn.signature !== 'string') {
+        return false;
+    } else if (typeof txIn.txOutId !== 'string') {      // hash
+        return false;
+    } else if (typeof txIn.txOutIndex !== 'number') {
+        return false;
+    } else {
+        return true;
+    }
 }
 const isTxOutStructureValid = (txOut) => {
     // to-do
