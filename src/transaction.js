@@ -74,7 +74,7 @@ const getTxId = (tx) => {
 }
 
 const findUTxOut = (txOutId, txOutIndex, uTxOutList) => {
-    return uTxOutList.find(uTxOut => uTxOut.txOutId === txOutId && uTxOut.txOutIndex === txOutIndex);
+    return uTxOutList.find(uTxO => uTxO.txOutId === txOutId && uTxO.txOutIndex === txOutIndex);
 }
 
 // 트랜잭션 인풋에 사인
@@ -114,7 +114,7 @@ ZZ와 MM은 새로운 Unspent_Tx_Output(아직 트랜잭션에 사용되지 않�
 // param - uTxOutList => u_tx_out과 그 주소.
 const updateUTxOuts = (newTxs, uTxOutList) => {
     // 트랜잭션 전체를 다 살펴보고, 트랜잭션 아웃풋도 다 뒤져서 새로운 u_tx_out을 생성
-    const newTxOuts = newTxs.map(tx => {
+    const newUTxOuts = newTxs.map(tx => {
         tx.txOuts.map((txOut, index) => {
             new UTxOut(tx.id, index, txOut.address, txOut.amount);
         })
@@ -210,5 +210,60 @@ const isTxStructureValid = (tx) => {
     } else {
         return true;
     }
+}
+
+// 트랜잭션_아웃풋 은 배열[] 이며, 트랜잭션_인풋은 해당 트랜잭션_아웃풋의 id와 index를 참조하고있음
+const getAmountInTxIn = (txIn, uTxOutList) => findUTxOut(txIn.txOutId, tx.txOutIndex, uTxOutList).amount;
+
+const validateTxIn = (txIn, tx, uTxOutList) => {
+    // 트랜잭션_인풋이 참조하고 있는 바로 이전 트랜잭션_아웃풋을 가져와야함
+    const wantedTxOut = uTxOutList.find(uTxO => uTxO.txOutId === txIn.txOutId && uTxO.txOutIndex === txIn.txOutIndex);
+    
+    // 트랜잭션_인풋이 참조하고 있는 바로 이전 트랜잭션_아웃풋이 없으면, 돈이 없다는 뜻.
+    if (wantedTxOut === null) {
+        return false;
+    } else {
+        // 내 고유 private키로 사인한 signature는 내 public키(addres)로 증명할 수 있음 - 내가 생성한 트랜잭션 이라는 것을.
+        // 트랜잭션_ID는 돈을 사용할 사람에 의해 사인(signature)되었음을 체크(증명)
+        /*
+        이 코인이 내 코인임을 증명하는 방법
+        : 트랜잭션_인풋에 내가 사인(signature) --> 내 주소(public키)가 트랜잭션_ID를 가지고 내가 예전에 한 사인(signature)를 증명
+        */
+        const address = wantedTxOut.address;
+        const key = ec.keyFromPublic(address, "hex");
+        return key.verify(tx.id, txIn.signature);   // tx.id(트랜잭션_ID 는 private키로 signature한 hash)
+    }
+}
+
+// Validate Tx = {id(hash), txIns[], txOuts[]}
+const validateTx = (tx, uTxOutList) => {
+    // check Transaction_ID's hash
+    if (getTxid(tx) !== tx.id) {
+        return false;
+    }
+
+    // check Transaction_Input_Arrays
+    const hasValidTxIns = tx.txIns.map(txIn => validateTxIn(txIn, tx, uTxOutList));
+
+    if (!hasValidTxIns) {
+        return false;
+    }
+
+    // 이 수량은 바로 이전 트랜잭션_아웃풋을 참조하고 있음
+    const amountInTxIns = tx.txIns
+        .map(txIn => getAmountInTxIn(txIn, uTxOutList)).
+        reduce((a, b) => a + b, 0);
+
+    // tx.txOuts --> map --> [34, 52, 76, 23] --> reduce --> 185
+    const amountInTxOuts = tx.txOuts
+        .map(txOut =>txOut.amount)
+        .reduce((a, b) => a + b, 0);
+
+    if (amountInTxIns !== amountInTxOuts) {
+        return false;
+    } else {
+        return true;
+    }
+    
 }
 
