@@ -12,6 +12,8 @@ Crypto-currency - coin with Node.js
     - hex-to-binary
     - elliptic
         -  ECC(elliptic-curve cryptography) 타원곡선암호
+    - fs
+    - path
 
 - vscode extension
     - REST Client ( Huachao Mao )
