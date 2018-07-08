@@ -48,4 +48,6 @@ const initWallet = () => {
 
 module.exports = {
     initWallet
+
+    
 };
