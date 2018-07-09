@@ -6,6 +6,8 @@ const CryptoJS = require('crypto-js'),
 // init EC - ECDSA (Elliptic Curve Digital Signature Algorithm) - ECC를 이용한 signature
 const ec = new EC('secp256k1');
 
+const COINBASE_AMOUNT = 50;
+
 /*
 Transaction_Output
 amount = how many coins have they.
@@ -237,6 +239,12 @@ const validateTxIn = (txIn, tx, uTxOutList) => {
 
 // Validate Tx = {id(hash), txIns[], txOuts[]}
 const validateTx = (tx, uTxOutList) => {
+
+    // check tx structure
+    if (!isTxStructureValid(tx)) {
+        return false;
+    }
+
     // check Transaction_ID's hash
     if (getTxid(tx) !== tx.id) {
         return false;
@@ -265,5 +273,26 @@ const validateTx = (tx, uTxOutList) => {
         return true;
     }
     
+}
+
+// coinbase transaction : 블록체인 --> 채굴자 에게 가는 트랜잭션 (1개의 인풋 & 1개의 아웃풋)
+// 트랜잭션_아웃풋만 존재함. (트랜잭션_인풋(트랜잭션 이전 아웃풋)은 없음) - 그냥 없던 코인이 새로 만들어지는 것.
+const validateCoinbaseTx = (tx, blockIndex) => {
+    if (getTxId(tx) !== tx.id) {
+        return false;
+    // 트랜잭션_인풋 은 only one (from 블록체인)
+    } else if (tx.txIns.length !== 1) {
+        return false;
+    // 트랜잭션_인풋 은 참조할 트랜잭션_아웃풋(Unspent Tx Output = 잔액) 이 없음.
+    // 그래서 트랜잭션_인풋 은 block의 index를 참조함.
+    } else if (tx.txIns[0].txOutIndex !== blockIndex) {
+        return false;
+    // 트랜잭션_아웃풋 은 only one (to 채굴자 1명)
+    } else if (tx.txOuts.length !== 1) {
+        return false;
+    // 한번에 채굴되어지는 수량이 미리 정한 amount 어야 함.
+    } else if (tx.txOuts[0].amount !== COINBASE_AMOUNT) {
+        return false;
+    }
 }
 
