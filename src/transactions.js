@@ -22,13 +22,13 @@ class TxOut {
 
 /*
 Transaction_Input (Unspent Transaction Output)
-uTxOutId = unspent transaction output ID -> a hash of content - for evaluating transaction.
-uxOutIndex -> just for finding transaction. 1, 2, 3, ...
+txOutId = unspent transaction output ID -> a hash of content - for evaluating transaction.
+txOutIndex -> just for finding transaction. 1, 2, 3, ...
 signature -> "my" transaction -> private key  ||  public key = target bitcoin address (보내려는 상대방 비트코인 주소)
 */
 class TxIn {
-    // uTxOutId = unspent transaction output ID
-    // uTxOutIndex
+    // txOutId ( unspent transaction output ID )
+    // txOutIndex
     // Signature
 }
 
@@ -82,13 +82,13 @@ const findUTxOut = (txOutId, txOutIndex, uTxOutList) => {
 // 트랜잭션 인풋에 사인
 // txInput's signature (내 사인(표시) - 보내는사람)
 // tx_in's sign <- hash(ECC-ecliptic) <- txID <- hash(SHA256-cryptoJs) <- txIn_arrays + txOuts_array <- previous tx_out + tx_out
-const signTxIn = (tx, txInIndex, privateKey, uTxOut) => {
+const signTxIn = (tx, txInIndex, privateKey, uTxOutList) => {
     const txIn = tx.txIns[txInIndex];
     const dataToSign = tx.id;
     // 트랜잭션 인풋을 찾으려면 Unspent tx out 을 찾아야 함. 이 Unspent tx out은 트랜잭션 아웃풋 배열에서 찾을 수 있음. 
     // 왜냐하면 트랜잭션 인풋이 트랜잭션 아웃풋을 참조(레퍼런스)하기 때문. 내가 돈이 남아있음(unspent tx out)을 증명.
     // referenced unspent transaction output - in the unspent transaction output arrays
-    const referencedUTxOut = findUTxOut(txIn.txOutId, txIn.txOutIndex, uTxOuts);
+    const referencedUTxOut = findUTxOut(txIn.txOutId, txIn.txOutIndex, uTxOutList);
     //쓸 돈이 없는 경우
     if (referencedUTxOut === null) {
         console.log("Couldn't find the referenced uTxOut, not signing");
@@ -309,3 +309,12 @@ const validateCoinbaseTx = (tx, blockIndex) => {
     }
 }
 
+
+module.exports = {
+    getPublicKey,
+    getTxId,
+    signTxIn,
+    TxIn,
+    Transaction,
+    TxOut
+}
