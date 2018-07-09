@@ -91,13 +91,26 @@ const signTxIn = (tx, txInIndex, privateKey, uTxOut) => {
     const referencedUTxOut = findUTxOut(txIn.txOutId, txIn.txOutIndex, uTxOuts);
     //쓸 돈이 없는 경우
     if (referencedUTxOut === null) {
+        console.log("Couldn't find the referenced uTxOut, not signing");
         return;
     }
-
+    // 보내는사람의 주소가 실제로 존재하는지 validation -> 트랜잭션 인풋 address가 지갑에서 얻은 address와 같은지 체크
+    const referencedAddress = referencedUTxOut.address;
+    if (getPublicKey(privateKey) !== referencedAddress) {
+        return false;
+    }
     const key = ec.keyFromPrivate(privateKey, 'hex');
     // sign하는 포맷 방식 = EDR포맷
     const signature = utils.toHexString(key.sign(dataToSign).toDER());
     return signature;
+}
+
+/*
+cf. wallet.js 에 정의되어있는 함수이고, module 불러와서 쓰면 되지만,
+이렇게 하면 wallet <-> transaction 양쪽에서 서로 불러다쓰기때문에 "circular input" 문제 발생하여 동일기능 함수를 transaction.js쪽에도 생성
+*/
+const getPublicKey = (privateKey) => {
+    return ec.keyFromPrivate(privateKey, "hex").getPublic().encode("hex");
 }
 
 /*
