@@ -1,5 +1,10 @@
 const CryptoJS = require("crypto-js"),
+    Wallet = require("./wallet"),
+    Transactions = require("./transactions"),
     hexToBinary = require("hex-to-binary");
+
+const { getBalance, getPublicFromWallet,  } = Wallet;
+const { createCoinbaseTx } = Transactions;
 
 const BLOCK_GENERATION_INTERVAL = 10;   // 매 10초마다 코인 채굴 (bitcoin = every 10*60 seconds)
 const DIFFICULTY_ADJUSTMENT_INTERVAL = 10;  // 매 10개 블록이 채굴될때마다 난이도 조정 (bitcoin = every 2016 blocks)
@@ -28,6 +33,8 @@ const genesisBlock = new Block(
 
 let blockchain = [genesisBlock];
 
+let uTxOuts =[];
+
 const getNewestBlock = () => blockchain[blockchain.length -1];
 
 const getTimestamp = () => Math.round(new Date().getTime() / 1000);
@@ -39,7 +46,16 @@ const createHash = (index, previousHash, timestamp, data, difficulty, nonce) =>
         index + previousHash + timestamp + JSON.stringify(data) + difficulty + nonce
     ).toString();
 
-const createNewBlock = data => {
+const createNewBlock = () => {
+    const coinbaseTx = createCoinbaseTx(
+        getPublicFromWallet(), 
+        getNewestBlock().index + 1
+    );
+    const blockData = [coinbaseTx];
+    return createNewRawBlock(blockData);
+}
+
+const createNewRawBlock = data => {
     const previousBlock = getNewestBlock();
     const newBlockIndex = previousBlock.index + 1;
     const newTimestamp = getTimestamp();
@@ -136,13 +152,14 @@ const isBlockValid = (candidateBlock, latestBlock) => {
 }
 
 // check block structures
+// "data" --> 
 const isBlockStructureValid = (block) => {
     return (
         typeof block.index === 'number' 
         && typeof block.hash === 'string' 
         && typeof block.previousHash === 'string' 
         && typeof block.timestamp === 'number' 
-        && typeof block.data === 'string'
+        && typeof block.data === 'object'
     );
 }
 
@@ -195,7 +212,9 @@ const addBlockToChain = candidateBlock => {
     } else {
         return false;
     }
-}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
+}
+
+const getAccountBalance = () => getBalance(getPublicFromWallet(), uTxOuts);
 
 module.exports = {
     getNewestBlock,
@@ -203,5 +222,6 @@ module.exports = {
     createNewBlock,
     isBlockStructureValid,
     addBlockToChain,
-    replaceChain
+    replaceChain,
+    getAccountBalance
 }

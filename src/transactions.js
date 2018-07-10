@@ -52,9 +52,6 @@ class UTxOut {
     }
 }
 
-let uTxOuts =[];
-
-
 
 // id = txIn array + txOut array => make hash
 // 트랜잭션 인풋과 아웃풋 각각 배열의 모든 원소를 문자열로 이어붙이고, 이 긴 문자열을 해싱.
@@ -64,6 +61,8 @@ reduce(callbackFn, initialValue_첫번째_인수로_사용되는_값)
 -> {address,amount} => [{'4646',80},{'4646',70},{'3434',50}] => ['464680','464670','343460'].reduce((a,b) => a+b, "") = "464680464670343450"
 */
 const getTxId = (tx) => {
+    console.log("~~~~~~~~~~~~~~~~~~")
+    console.log(tx);
     const txInsContent = tx.txIns
         .map(txIn => txIn.uTxOutId + txIn.txOutIndex)
         .reduce((a, b) => a + b, "");
@@ -309,6 +308,18 @@ const validateCoinbaseTx = (tx, blockIndex) => {
     }
 }
 
+// 코인베이스_트랜잭션 = 1개의 트랜잭션_인풋(blockIndex만을 가진) + 1개의 트랜잭션_아웃풋 + 트랜잭션_ID
+const createCoinbaseTx = (address, blockIndex) => {
+    const tx = new Transaction();
+    const txIn = new TxIn();
+    txIn.signature = "";
+    txIn.txOutId = blockIndex;
+    tx.txIns = [txIn];
+    tx.txOuts = [new TxOut(address, COINBASE_AMOUNT)];
+    tx.id = getTxId(tx);
+    return tx;
+}
+
 
 module.exports = {
     getPublicKey,
@@ -316,5 +327,6 @@ module.exports = {
     signTxIn,
     TxIn,
     Transaction,
-    TxOut
+    TxOut,
+    createCoinbaseTx
 }
