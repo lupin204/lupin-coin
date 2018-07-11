@@ -1,6 +1,8 @@
 const CryptoJS = require('crypto-js'),
     EC = require('elliptic').ec,
+    _ = require('lodash'),
     utils = require('./utils');
+    
 
 
 // init EC - ECDSA (Elliptic Curve Digital Signature Algorithm) - ECC를 이용한 signature
@@ -61,8 +63,6 @@ reduce(callbackFn, initialValue_첫번째_인수로_사용되는_값)
 -> {address,amount} => [{'4646',80},{'4646',70},{'3434',50}] => ['464680','464670','343460'].reduce((a,b) => a+b, "") = "464680464670343450"
 */
 const getTxId = (tx) => {
-    console.log("~~~~~~~~~~~~~~~~~~")
-    console.log(tx);
     const txInsContent = tx.txIns
         .map(txIn => txIn.uTxOutId + txIn.txOutIndex)
         .reduce((a, b) => a + b, "");
@@ -129,11 +129,11 @@ ZZ와 MM은 새로운 Unspent_Tx_Output(아직 트랜잭션에 사용되지 않�
 const updateUTxOuts = (newTxs, uTxOutList) => {
     // 트랜잭션 전체를 다 살펴보고, 트랜잭션 아웃풋도 다 뒤져서 새로운 u_tx_out을 생성
     const newUTxOuts = newTxs.map(tx => {
-        tx.txOuts.map((txOut, index) => {
-            new UTxOut(tx.id, index, txOut.address, txOut.amount);
+        return tx.txOuts.map((txOut, index) => {
+            return new UTxOut(tx.id, index, txOut.address, txOut.amount)
         })
     })
-        .reduce((a, b) => a.concat(b), []);
+    .reduce((a, b) => a.concat(b), []);
 
     // 트랜잭션 인풋으로 사용된 모든 트랜잭션 아웃풋을 가져다가 일단 비움.
     // input이 50이고 10을 보내고 싶으면, 일단 input의 50을 지움.
@@ -291,20 +291,27 @@ const validateTx = (tx, uTxOutList) => {
 // 트랜잭션_아웃풋만 존재함. (트랜잭션_인풋(트랜잭션 이전 아웃풋)은 없음) - 그냥 없던 코인이 새로 만들어지는 것.
 const validateCoinbaseTx = (tx, blockIndex) => {
     if (getTxId(tx) !== tx.id) {
+        console.log("Invalid Coinbase tx ID");
         return false;
     // 트랜잭션_인풋 은 only one (from 블록체인)
     } else if (tx.txIns.length !== 1) {
+        console.log("Coinbase TX should only have one input");
         return false;
     // 트랜잭션_인풋 은 참조할 트랜잭션_아웃풋(Unspent Tx Output = 잔액) 이 없음.
     // 그래서 트랜잭션_인풋 은 block의 index를 참조함.
     } else if (tx.txIns[0].txOutIndex !== blockIndex) {
+        console.log("The txOutIndex of the Coinbase Tx should be the same as the Block Index");
         return false;
     // 트랜잭션_아웃풋 은 only one (to 채굴자 1명)
     } else if (tx.txOuts.length !== 1) {
+        console.log("Coinbase TX should only have one output");
         return false;
     // 한번에 채굴되어지는 수량이 미리 정한 amount 어야 함.
     } else if (tx.txOuts[0].amount !== COINBASE_AMOUNT) {
+        console.log(`Coinbase TX should have an amount of only ${COINBASE_AMOUNT} and it has ${tx.txOuts[0].amount}`);
         return false;
+    } else {
+        return true;
     }
 }
 
@@ -313,11 +320,63 @@ const createCoinbaseTx = (address, blockIndex) => {
     const tx = new Transaction();
     const txIn = new TxIn();
     txIn.signature = "";
-    txIn.txOutId = blockIndex;
+    txIn.txOutId = "";
+    txIn.txOutIndex = blockIndex;
     tx.txIns = [txIn];
     tx.txOuts = [new TxOut(address, COINBASE_AMOUNT)];
     tx.id = getTxId(tx);
     return tx;
+}
+
+// 중복으로 지출(double spending)되는지를 체크
+const hasDuplicates = (txIns) => {
+    // lodash.countBy = 배열 원소를 가지고 함수를 돌려서 나온 결과를 {"결과값": 갯수} JSON 형태로 리턴
+    // _.countBy([12.7, 12.2, 12.1, 3, 3, 8.1, 8.125], Math.ceil)               = {"3": 2, "9": 2, "13": 3}
+    // _.countBy([12.7, 12.2, 12.1, 3, 3, 8.1, 8.125], elem => Math.ceil(elem)) = {"3": 2, "9": 2, "13": 3}
+    const groups = _.countBy(txIns, txIn => txIn.txOutId + txIn.txOutIndex);
+
+    // countBy로 그룹핑해서 모든 갯수가 1인지를 체크(아니면 중복임)하여, 중복이면(1보다크면) true를 리턴하고.
+    // 결과배열에서 true가 1개라도 있으면(중복이 하나라도 확인되면) 최종적으로 hasDuplicates함수는 true 리턴
+    return _(groups).map(value => {
+        if (value > 1) {
+            console.log("Found a duplicated txIn");
+            return true;
+        } else {
+            return false;
+        }
+    }).includes(true)
+}
+
+const validateBlockTxs = (txs, uTxOutList, blockIndex) => {
+    const coinbaseTx = txs[0];
+    if (!validateCoinbaseTx(coinbaseTx, blockIndex)) {
+        console.log("Coinbase Tx is invalid");
+        return false;
+    }
+
+    const txIns = _(txs).map(tx => tx.txIns).flatten().value();
+
+    // 하나의 인풋을 가지고 중복되게 사용하는지 체크
+    // (ex. 50개의 코인을 인풋으로 넣어서 A와 B에게 동시에 보낼수는 없다.)
+    if (hasDuplicates(txIns)) {
+        console.log("Found duplicated txIns");
+        return false;
+    }
+
+    // 코인베이스 트랜잭션에 대하여 체크
+    const nonCoinbaseTxs = txs.slice(1);
+    return nonCoinbaseTxs.map(txs => validateTx(tx, uTxOutList)).reduce((a, b) => a + b, true);
+}
+
+
+
+// (FROM) 업데이트 할 블록 인덱스 -> (TO) 업데이트 할 U_TX_OUTPUT_LIST와 
+// 트랜잭션 -> 아웃풋 생성 -> (검증:validateBlockTxs) -> U_TX_OUTPUT 업데이트 -> 블록체인에 블록 추가
+const processTxs = (tx, uTxOutList, blockIndex) => {
+    if (!validateBlockTxs(tx, uTxOutList, blockIndex)) {
+        return null;
+    }
+    return updateUTxOuts(tx, uTxOutList);;
 }
 
 
@@ -328,5 +387,6 @@ module.exports = {
     TxIn,
     Transaction,
     TxOut,
-    createCoinbaseTx
+    createCoinbaseTx,
+    processTxs
 }

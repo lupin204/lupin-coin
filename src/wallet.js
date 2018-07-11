@@ -30,7 +30,7 @@ const getPublicFromWallet = () => {
 }
 
 // my balance(내가 가진 코인 총 수량) = Unspent Transaction Output Arrays 에서 내 주소와 같은 것만 찾아 amount의 합.
-const getBalance = (address, uTxOuts) => {
+const getBalance = (address, uTxOuts) => { 
     // How To Use "lodash"
     // use to lo_([12, 34, 56]).sum() = [12, 34, 56].reduce((a, b) => a + b, 0) = 12+34+56 = 106
     return _(uTxOuts).filter(uTxO => uTxO.address === address).map(uTxO => uTxO.amount).sum();

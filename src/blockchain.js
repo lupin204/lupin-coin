@@ -4,7 +4,7 @@ const CryptoJS = require("crypto-js"),
     hexToBinary = require("hex-to-binary");
 
 const { getBalance, getPublicFromWallet,  } = Wallet;
-const { createCoinbaseTx } = Transactions;
+const { createCoinbaseTx, processTxs } = Transactions;
 
 const BLOCK_GENERATION_INTERVAL = 10;   // 매 10초마다 코인 채굴 (bitcoin = every 10*60 seconds)
 const DIFFICULTY_ADJUSTMENT_INTERVAL = 10;  // 매 10개 블록이 채굴될때마다 난이도 조정 (bitcoin = every 2016 blocks)
@@ -207,8 +207,15 @@ const replaceChain = candidateChain => {
 
 const addBlockToChain = candidateBlock => {
     if (isBlockValid(candidateBlock, getNewestBlock())) {
-        blockchain.push(candidateBlock);
-        return true;
+        const processedTxs = processTxs(candidateBlock.data, uTxOuts, candidateBlock.index);    // return null || arrays
+        if (processedTxs === null) {
+            console.log("Couldnt process txs");
+            return false;
+        } else {
+            blockchain.push(candidateBlock);
+            uTxOuts = processedTxs;
+            return true;
+        }
     } else {
         return false;
     }
