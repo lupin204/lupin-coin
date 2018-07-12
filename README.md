@@ -65,3 +65,13 @@ Crypto-currency - coin with Node.js
         - Tx_Output = amount(how many coins have they) + address(where they belong to)
         - Tx_Input = unspent_transaction_output(need to validation) + signature
             - U_Tx_Output = id(hash) + index
+
+~~~~~~~~~~~~~~~~~~~~~
+
+- 블록체인에서 트랜잭션을 컨펌 하는 방법
+    - 블록체인에 새로운 블록을 추가
+
+
+~~~~~~~~~~~~~~~~~~~
+- 코인베이스 트랜잭션은 블록체인에 추가(push)됨.
+    - 트랜잭션 검증, unspent transaction output 업데이트 후 개인지갑의 balance에 amount 추가가 필요함.
