@@ -75,3 +75,7 @@ Crypto-currency - coin with Node.js
 ~~~~~~~~~~~~~~~~~~~
 - 코인베이스 트랜잭션은 블록체인에 추가(push)됨.
     - 트랜잭션 검증, unspent transaction output 업데이트 후 개인지갑의 balance에 amount 추가가 필요함.
+
+
+~~~~~~~~~~~~~~~~~~~
+- 
