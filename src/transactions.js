@@ -8,6 +8,8 @@ const CryptoJS = require('crypto-js'),
 // init EC - ECDSA (Elliptic Curve Digital Signature Algorithm) - ECC를 이용한 signature
 const ec = new EC('secp256k1');
 
+// 한번 채굴할때마다 생성되는 코인의 수량 (비트코인은 시간에 따라 채굴 수량이 절반으로 줄어듬)
+// --> 코인베이스 트랜잭션 때 트랜잭션_아웃풋으로 생성되는 amount의 수량
 const COINBASE_AMOUNT = 50;
 
 /*
@@ -174,11 +176,14 @@ const isTxInStructureValid = (txIn) => {
 const isAddressValid = (address) => {
     // check address length is 130
     if (adderss.length !== 130) {
+        console.log("The address length is not the expected one");
         return false;
     // check address is hexa-decimal(16진수)
     } else if (address.match("^[a-fA-F0-9]+$") === null) {
+        console.log("The address doesn't match the hex pattern");
         return false;
     } else if (!address.startsWith('04')) {
+        console.log("The address doesn't start with 04");
         return false;
     } else {
         return true;
@@ -235,6 +240,7 @@ const validateTxIn = (txIn, tx, uTxOutList) => {
     
     // 트랜잭션_인풋이 참조하고 있는 바로 이전 트랜잭션_아웃풋이 없으면, 돈이 없다는 뜻.
     if (wantedTxOut === null) {
+        console.log(`Didn't find the wanted uTxOut, the tx: ${tx} is invalid`);
         return false;
     } else {
         // 내 고유 private키로 사인한 signature는 내 public키(addres)로 증명할 수 있음 - 내가 생성한 트랜잭션 이라는 것을.
@@ -254,11 +260,13 @@ const validateTx = (tx, uTxOutList) => {
 
     // check tx structure
     if (!isTxStructureValid(tx)) {
+        console.log("Tx structure is invalid");
         return false;
     }
 
     // check Transaction_ID's hash
     if (getTxid(tx) !== tx.id) {
+        console.log("Tx ID is not valid");
         return false;
     }
 
@@ -266,6 +274,7 @@ const validateTx = (tx, uTxOutList) => {
     const hasValidTxIns = tx.txIns.map(txIn => validateTxIn(txIn, tx, uTxOutList));
 
     if (!hasValidTxIns) {
+        console.log(`The tx: ${tx} doesn't have valid txIns`);
         return false;
     }
 
@@ -280,6 +289,7 @@ const validateTx = (tx, uTxOutList) => {
         .reduce((a, b) => a + b, 0);
 
     if (amountInTxIns !== amountInTxOuts) {
+        console.log(`The tx: ${tx} doesn't have the same amount in the txOut as in the txIns`);
         return false;
     } else {
         return true;
