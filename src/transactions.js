@@ -91,7 +91,7 @@ const signTxIn = (tx, txInIndex, privateKey, uTxOutList) => {
     // referenced unspent transaction output - in the unspent transaction output arrays
     const referencedUTxOut = findUTxOut(txIn.txOutId, txIn.txOutIndex, uTxOutList);
     //쓸 돈이 없는 경우
-    if (referencedUTxOut === null) {
+    if (referencedUTxOut === null || referencedUTxOut === undefined) {
         console.log("Couldn't find the referenced uTxOut, not signing");
         return;
     }
@@ -175,7 +175,7 @@ const isTxInStructureValid = (txIn) => {
 // address 검증 : address(public key) 길이는 130자
 const isAddressValid = (address) => {
     // check address length is 130
-    if (adderss.length !== 130) {
+    if (address.length !== 130) {
         console.log("The address length is not the expected one");
         return false;
     // check address is hexa-decimal(16진수)
@@ -232,7 +232,7 @@ const isTxStructureValid = (tx) => {
 }
 
 // 트랜잭션_아웃풋 은 배열[] 이며, 트랜잭션_인풋은 해당 트랜잭션_아웃풋의 id와 index를 참조하고있음
-const getAmountInTxIn = (txIn, uTxOutList) => findUTxOut(txIn.txOutId, tx.txOutIndex, uTxOutList).amount;
+const getAmountInTxIn = (txIn, uTxOutList) => findUTxOut(txIn.txOutId, txIn.txOutIndex, uTxOutList).amount;
 
 const validateTxIn = (txIn, tx, uTxOutList) => {
     // 트랜잭션_인풋이 참조하고 있는 바로 이전 트랜잭션_아웃풋을 가져와야함
@@ -265,7 +265,7 @@ const validateTx = (tx, uTxOutList) => {
     }
 
     // check Transaction_ID's hash
-    if (getTxid(tx) !== tx.id) {
+    if (getTxId(tx) !== tx.id) {
         console.log("Tx ID is not valid");
         return false;
     }

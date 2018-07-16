@@ -1,10 +1,15 @@
 const CryptoJS = require("crypto-js"),
+    _ = require("lodash"),
     Wallet = require("./wallet"),
     Transactions = require("./transactions"),
+    Mempool = require("./mempool"),
     hexToBinary = require("hex-to-binary");
 
-const { getBalance, getPublicFromWallet,  } = Wallet;
+const { getBalance, getPublicFromWallet, createTx, getPrivateFromWallet } = Wallet;
+
 const { createCoinbaseTx, processTxs } = Transactions;
+
+const { addToMempool } = Mempool;
 
 const BLOCK_GENERATION_INTERVAL = 10;   // 매 10초마다 코인 채굴 (bitcoin = every 10*60 seconds)
 const DIFFICULTY_ADJUSTMENT_INTERVAL = 10;  // 매 10개 블록이 채굴될때마다 난이도 조정 (bitcoin = every 2016 blocks)
@@ -221,7 +226,18 @@ const addBlockToChain = candidateBlock => {
     }
 }
 
+// 트랜잭션 등 여러가지 함수에서 UTxOutList(Unspent_Tx_Output_List)를 사용중임.
+// 단, 값을 변경하거나 하지는 않고 참조하여 리스트 값만을 사용중 -> DEEP COPY(완전히 새로운 obj)
+// U_TX_OUTPUT_LIST의 복사본을 준다. 
+const getUTxOutList = () => _.cloneDeep(uTxOuts);
+
 const getAccountBalance = () => getBalance(getPublicFromWallet(), uTxOuts);
+
+const sendTx = (address, amount) => {
+    const tx = createTx(address, amount, getPrivateFromWallet(), getUTxOutList());
+    addToMempool(tx, getUTxOutList());
+    return tx;
+}
 
 module.exports = {
     getNewestBlock,
@@ -230,5 +246,6 @@ module.exports = {
     isBlockStructureValid,
     addBlockToChain,
     replaceChain,
-    getAccountBalance
+    getAccountBalance,
+    sendTx
 }
