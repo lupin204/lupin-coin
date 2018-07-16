@@ -78,8 +78,8 @@ Crypto-currency - coin with Node.js
 
 
 ~~~~~~~~~~~~~~~~~~~
-- memPool
-    - MemPool = 트랜잭션 풀 = pending transaction (box) = unconfirmed transaction
+- mempool
+    - Mempool = 트랜잭션 풀 = pending transaction (box) = unconfirmed transaction
     - 이미 발생한 트랜잭션이지만, 아직 블록체인에 포함되지 않은 트랜잭션들..
-    - 트랜잭션이 생성되면 -> 유효성을 검증하고 -> 수량이 있는지 체크하고 -> (MemPool 이라는 곳에 일단 추가) -> 
-    - 채굴자는 새로 채굴한 블록마다 모든 트랜잭션을 MemPool에 추가하고 그 후에 이를 블록에 추가.
+    - 트랜잭션이 생성되면 -> 유효성을 검증하고 -> 수량이 있는지 체크하고 -> (Mempool 이라는 곳에 일단 추가) -> 
+    - 채굴자는 새로 채굴한 블록마다 모든 트랜잭션을 Mempool에 추가하고 그 후에 이를 블록에 추가.
