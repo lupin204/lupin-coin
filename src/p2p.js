@@ -1,4 +1,5 @@
 const WebSockets = require('ws'),
+    Mempool = require("./mempool"),
     Blockchain = require('./blockchain');
 
 
@@ -7,8 +8,11 @@ const {
     isBlockStructureValid,
     replaceChain,
     getBlockchain,
-    addBlockToChain
+    addBlockToChain,
+    handleIncomingTx
  } = Blockchain;
+
+const { getMempool } = Mempool;
 
 const sockets = [];
 
@@ -16,6 +20,8 @@ const sockets = [];
 const GET_LATEST = "GET_LATEST";
 const GET_ALL = "GET_ALL";
 const BLOCKCHAIN_RESPONSE = "BLOCKCHAIN_RESPONSE";
+const REQUEST_MEMPOOL = "REQUEST_MEMPOOL";
+const MEMPOOL_RESPONSE = "MEMPOOL_RESPONSE";
 
 // Messages Creators ( REDUX - reducer )
 const getLatest = () => {
@@ -37,6 +43,21 @@ const blockchainResponse = (data) => {
     };
 }
 
+const getAllMempool = () => {
+    return {
+        type: REQUEST_MEMPOOL,
+        data: null
+    }
+}
+
+const mempoolResponse = (data) => {
+    return {
+        type: MEMPOOL_RESPONSE,
+        data: data
+    }
+}
+
+
 const getSockets = () => sockets;
 
 // server : Express HTTP server
@@ -45,6 +66,9 @@ const startP2PServer = (server) => {
     wsServer.on('connection', ws => {
         console.log(`hello Sockets!`);
         initSocketConnection(ws);
+    });
+    wsServer.on("error", () => {
+        console.log("error");
     });
     console.log('Lupincoin p2p server running');
 }
@@ -55,6 +79,17 @@ const initSocketConnection = (ws) => {
     handleSocketMessages(ws);
     handleSocketError(ws);
     sendMessage(ws, getLatest());
+    // 블록체인 싱크 이후에 mempool을 가져온다. (1000ms 텀)
+    setTimeout(() => {
+       sendMessageToAll(ws, getAllMempool()); 
+    }, 100);
+
+    // 채굴 등의 오랜 시간이 걸리는 작업을 하다 소켓이 커넥션이 끊기면 안되니까 1초에 한번씩 소켓을 연결
+    setInterval(() => {
+        if (sockets.includes(ws)) {
+            sendMessage(ws, "[Keep Connection]");
+        }
+    }, 1000);
 }
 
 const parseData = (data) => {
@@ -72,7 +107,7 @@ const handleSocketMessages = (ws) => {
         if (message === null) {
             return;     // just exit this function
         }
-        console.log(message);
+        //console.log(message);
         switch (message.type) {
             case GET_LATEST:
                 sendMessage(ws, responseLatest());
@@ -81,11 +116,28 @@ const handleSocketMessages = (ws) => {
                 sendMessage(ws, responseAll());
                 break;
             case BLOCKCHAIN_RESPONSE:
-                const receivedBlocks = message.data;
+                const receivedBlocks = message.data; 
                 if (receivedBlocks === null) {
                     break;
                 }
                 handleBlockchainResponse(receivedBlocks);
+                break;
+            case REQUEST_MEMPOOL:
+                sendMessage(ws, returnMempool());
+                break;
+            case MEMPOOL_RESPONSE:
+                const receivedTxs =  message.data;
+                if (receivedTxs === null) {
+                    return;
+                }
+                receivedTxs.forEach(tx => {
+                    try {
+                        handleIncomingTx(tx);
+                        broadcastMempool();
+                    } catch(e) { 
+                        console.log(e);
+                    }
+                });
                 break;
         }
     });
@@ -121,6 +173,8 @@ const handleBlockchainResponse = (receivedBlocks) => {
     }
 }
 
+const returnMempool = () => mempoolResponse(getMempool());
+
 const sendMessage = (ws, message) => ws.send(JSON.stringify(message));
 
 const sendMessageToAll = (message) => sockets.forEach(ws => sendMessage(ws, message));
@@ -130,6 +184,8 @@ const responseLatest = () => blockchainResponse([getNewestBlock()]);
 const responseAll = () => blockchainResponse(getBlockchain());
 
 const broadcastNewBlock = () => sendMessageToAll(responseLatest());
+
+const broadcastMempool = () => sendMessageToAll(returnMempool());
 
 const handleSocketError = (ws) => {
     const closeSocketConnection = (ws) => {
@@ -145,12 +201,15 @@ const connectToPeers = newPeer => {
     ws.on('open', () => {
         initSocketConnection(ws);
     });
+    ws.on("error", () => console.log("Connection failed"));
+    ws.on("close", () => console.log("Connection failed"));
 }
 
 module.exports = {
     startP2PServer,
     connectToPeers,
-    broadcastNewBlock
+    broadcastNewBlock,
+    broadcastMempool
 }
 
 

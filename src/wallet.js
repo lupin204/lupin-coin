@@ -136,5 +136,6 @@ module.exports = {
     getBalance,
     getPublicFromWallet,
     createTx,
-    getPrivateFromWallet
+    getPrivateFromWallet,
+    getBalance
 };

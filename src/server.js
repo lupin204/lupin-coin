@@ -1,4 +1,5 @@
 const express = require('express'),
+    _ = require("lodash"),
     bodyParser = require('body-parser'),
     morgan = require('morgan'),
     Blockchain = require('./blockchain'),
@@ -6,9 +7,9 @@ const express = require('express'),
     Mempool = require('./mempool'),
     Wallet = require('./wallet');
 
-const { getBlockchain, createNewBlock, getAccountBalance, sendTx } = Blockchain;
+const { getBlockchain, createNewBlock, getAccountBalance, sendTx, getUTxOutList } = Blockchain;
 const { startP2PServer, connectToPeers } = P2P;
-const { initWallet, getPublicFromWallet } = Wallet;
+const { initWallet, getPublicFromWallet, getBalance } = Wallet;
 const { getMempool } = Mempool;
 
 const PORT = process.env.HTTP_PORT || 3000;
@@ -69,6 +70,28 @@ app.get("/me/address", (req, res) => {
   res.send(getPublicFromWallet());
 });
 
+// 블록의 hash로 해당 블록을 찾는다
+app.get("/blocks/:hash", (req, res) => {
+  const { params : { hash } } = req;
+  const block = _.find(getBlockchain(), { hash });
+  if (block === undefined) {
+    res.status(400).send("Block not found");
+  } else {
+    res.send(block);
+  }
+});
+
+// 트랜잭션_ID로 해당 트랜잭션 정보를 얻는다
+app.get("/transactions/:id", (req, res) => {
+  const tx = _(getBlockchain()).map(blocks => blocks.data).flatten()
+    .find({ id: req.params.id });
+  
+  if (tx === undefined) {
+    res.status(400).send("Transaction not found");
+  }
+  res.send(tx);
+});
+
 app.route("/transactions") 
   .get((req, res) => {
     res.send(getMempool()); 
@@ -86,6 +109,12 @@ app.route("/transactions")
       res.status(400).send(e.message);
     }
   });
+
+app.get("/address/:address", (req, res) => {
+  const { params : { address } } = req;
+  const balance = getBalance(address, getUTxOutList());
+  res.send({ balance });
+});
 
 const server = app.listen(PORT, () => 
     console.log(`LupinCoin Server running on ${PORT}`)

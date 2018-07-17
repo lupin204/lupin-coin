@@ -82,6 +82,9 @@ const createNewRawBlock = data => {
 
     const newBlock = findBlock(newBlockIndex, previousBlock.hash, newTimestamp, data, difficulty);
     addBlockToChain(newBlock);
+
+    // [double import] A모듈의 a함수 호출 -> B모듈의 b함수 호출 -> A함수의 a함수 호출 무한히 서로 호출.
+    // P2P.js와 blockchain.js 중 한쪽만 import 하고 반대쪽에서는 아래처럼 바로 require하여 바로 호출.
     require("./p2p").broadcastNewBlock();
     return newBlock;
 }
@@ -193,15 +196,30 @@ const isChainValid = (candidateChain) => {
     };
     if (!isGenesisValid(candidateChain[0])) {
         console.log("The candidate chain's genesisBlock is not the same as our genesisBlock");
-        return false;
+        return null;
     }
+
+    let foreignUTxOuts = [];
+
     // 2번째(i=1) 블록부터 체크 ( 1번째(i=0) 블록은 genesis block이라 previous hash = null 이기때문에 검증하지 않음 )
-    for (let i=1; i<candidateChain.length; i++) {
-        if (!isBlockValid(candidateChain[i], candidateChain[i-1])) {
-            return false;
+    // --> 첫번째 블록이 U_TX_OUT_LIST를 가지고 있기때문에. 1번째(i=0) 블록부터 체크해야함..
+    for (let i=0; i<candidateChain.length; i++) {
+        // 모든 트랜잭션을 프로세스 하고. 이 최근 블록을
+        const currentBlock = candidateChain[i];
+
+        // --> 위에서 0번째를 검증하지 않는 대신 이 부분에서 1번째 블록 제외를 여기서 함..
+        if (i !== 0 && !isBlockValid(candidateChain[i], candidateChain[i-1])) {
+            return null;
         }
+
+        foreignUTxOuts = processTxs(currentBlock.data, foreignUTxOuts, currentBlock.index);
+
+        if (foreignUTxOuts === null) {
+            return null;
+        }
+
     }
-    return true;
+    return foreignUTxOuts;
 }
 
 // 블록체인의 난이도를 체크
@@ -218,8 +236,15 @@ const sumDifficulty = (anyBlockchain) =>
 새 블록체인을 검증(Genesis block이 같고, 각각의 블록들이 모두 valid)하여 이상없으면..
 */
 const replaceChain = candidateChain => {
-    if (isChainValid(candidateChain) && sumDifficulty(candidateChain) > sumDifficulty(getBlockchain())) {
+
+    const foreignUTxOuts = isChainValid(candidateChain);
+    const validChain = foreignUTxOuts !== null;
+
+    if (validChain && sumDifficulty(candidateChain) > sumDifficulty(getBlockchain())) {
         blockchain = candidateChain;
+        uTxOuts = foreignUTxOuts;
+        updateMempool(uTxOuts);
+        require("./p2p").broadcastNewBlock();
         return true;
     } else {
         return false;
@@ -227,6 +252,7 @@ const replaceChain = candidateChain => {
 }
 
 const addBlockToChain = candidateBlock => {
+
     if (isBlockValid(candidateBlock, getNewestBlock())) {
         const processedTxs = processTxs(candidateBlock.data, uTxOuts, candidateBlock.index);    // return null || arrays
         if (processedTxs === null) {
@@ -250,16 +276,19 @@ const addBlockToChain = candidateBlock => {
 // U_TX_OUTPUT_LIST의 복사본을 준다. 
 const getUTxOutList = () => _.cloneDeep(uTxOuts);
 
-const getAccountBalance = () => { console.log("~~~~~~~~~~~~~~~~"); console.log(uTxOuts); return getBalance(getPublicFromWallet(), uTxOuts); }
+const getAccountBalance = () => getBalance(getPublicFromWallet(), uTxOuts);
 
 const sendTx = (address, amount) => {
     const tx = createTx(address, amount, getPrivateFromWallet(), getUTxOutList(), getMempool());
     addToMempool(tx, getUTxOutList());
+    
+    // [double import] 피하기.. -> blockchain.js - createNewRawBlock() 참고..
+    require("./p2p").broadcastMempool();
     return tx;
 }
 
 const handleIncomingTx = (tx) => {
-    addToMempool(tx, getMempool());
+    addToMempool(tx, getUTxOutList());
 }
 
 module.exports = {
@@ -271,5 +300,6 @@ module.exports = {
     replaceChain,
     getAccountBalance,
     sendTx,
-    handleIncomingTx
+    handleIncomingTx,
+    getUTxOutList
 }

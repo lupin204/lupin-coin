@@ -239,7 +239,7 @@ const validateTxIn = (txIn, tx, uTxOutList) => {
     const wantedTxOut = uTxOutList.find(uTxO => uTxO.txOutId === txIn.txOutId && uTxO.txOutIndex === txIn.txOutIndex);
     
     // 트랜잭션_인풋이 참조하고 있는 바로 이전 트랜잭션_아웃풋이 없으면, 돈이 없다는 뜻.
-    if (wantedTxOut === null) {
+    if (wantedTxOut === undefined) {
         console.log(`Didn't find the wanted uTxOut, the tx: ${tx} is invalid`);
         return false;
     } else {
