@@ -9,7 +9,7 @@ const { getBalance, getPublicFromWallet, createTx, getPrivateFromWallet } = Wall
 
 const { createCoinbaseTx, processTxs } = Transactions;
 
-const { addToMempool, getMempool } = Mempool;
+const { addToMempool, getMempool, updateMempool } = Mempool;
 
 const BLOCK_GENERATION_INTERVAL = 10;   // 매 10초마다 코인 채굴 (bitcoin = every 10*60 seconds)
 const DIFFICULTY_ADJUSTMENT_INTERVAL = 10;  // 매 10개 블록이 채굴될때마다 난이도 조정 (bitcoin = every 2016 blocks)
@@ -217,9 +217,11 @@ const addBlockToChain = candidateBlock => {
         if (processedTxs === null) {
             console.log("Couldnt process txs");
             return false;
+        // 블록이 추가될때 blockchain에 추가 / U_TX_OUTPUT_LIST에 추가 / mempool 비우기.
         } else {
             blockchain.push(candidateBlock);
             uTxOuts = processedTxs;
+            updateMempool(); 
             return true;
         }
     } else {
