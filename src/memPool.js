@@ -50,7 +50,7 @@ const hasTxIn = (txIn, uTxOutList) => {
 // 모든 unspent tx output
 const updateMempool = (uTxOutList) => {
     // 무효한 트랜잭션 = U_TX_OUT_LIST에서 인풋을 찾을 수 없을때..
-    const invalidTx = [];
+    const invalidTxs = [];
 
     for (const tx of mempool) {
         for (const txIn of tx.txIns) {
