@@ -33,7 +33,10 @@ const getPublicFromWallet = () => {
 const getBalance = (address, uTxOuts) => { 
     // How To Use "lodash"
     // use to lo_([12, 34, 56]).sum() = [12, 34, 56].reduce((a, b) => a + b, 0) = 12+34+56 = 106
-    return _(uTxOuts).filter(uTxO => uTxO.address === address).map(uTxO => uTxO.amount).sum();
+    return _(uTxOuts)
+        .filter(uTxO => uTxO.address === address)
+        .map(uTxO => uTxO.amount)
+        .sum();
 }
 
 // make "privateKey" file.

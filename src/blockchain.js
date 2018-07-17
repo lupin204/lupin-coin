@@ -26,19 +26,32 @@ class Block {
     }
 }
 
+const genesisTx = {
+    txIns: [{ signature: "", txOutId: "", txOutIndex: 0 }],
+    txOuts: [
+      {
+        address:
+          "04201fc2c89b5cf914008e33cf0428ee8dfdcba10eed380fc939a85526360f60961ce3297159355f4949eec5a72a010539cbd490be0693f339769a1cbe1eb0cebf",
+        amount: 50
+      }
+    ],
+    id: "5a504b62f3326fa95076fa827ac94d0439ccfe2df09dc19e933e91d1445a2154"
+  };
+
 const genesisBlock = new Block(
     0,
-    'AEEBAD4A796FCC2E15DC4C6061B45ED9B373F26ADFC798CA7D2D8CC58182718E',
-    null,
+    '0bb71374301e04c0ff09a10a0564f90f5292eb39d902dd6ce07c3a96e3e8eb69',
+    "",
     1529911829,
-    'The Genesis of lupin-coin',
+    [genesisTx],
     0,
     0
 );
 
 let blockchain = [genesisBlock];
 
-let uTxOuts =[];
+// 첫 트랜잭션의 결과값을 U_TX_OUTPUT_LIST로 가지고 시작함. - genesis block 도 그 자체로 tx를 가지고 있으니까 그 결과가 U_TX_OUT_LIST의 첫번째 element가 된다.
+let uTxOuts = processTxs(blockchain[0].data, [], 0);
 
 const getNewestBlock = () => blockchain[blockchain.length -1];
 
@@ -122,6 +135,8 @@ const hasMatchesDifficulty = (hash, difficulty) => {
 
 const getBlocksHash = (block) =>
     createHash(block.index, block.previousHash, block.timestamp, block.data, block.difficulty, block.nonce);
+
+//console.log(getBlocksHash(genesisBlock));
 
 // timestamp 검증 : 현재시간 +- 1분 오차까지 허용.
 const isTimestampValid = (newBlock, oldBlock) => {
@@ -221,11 +236,12 @@ const addBlockToChain = candidateBlock => {
         } else {
             blockchain.push(candidateBlock);
             uTxOuts = processedTxs;
-            updateMempool(); 
+            updateMempool(uTxOuts); 
             return true;
         }
+        return true;
     } else {
-        return false;
+        return false; 
     }
 }
 
@@ -234,12 +250,16 @@ const addBlockToChain = candidateBlock => {
 // U_TX_OUTPUT_LIST의 복사본을 준다. 
 const getUTxOutList = () => _.cloneDeep(uTxOuts);
 
-const getAccountBalance = () => getBalance(getPublicFromWallet(), uTxOuts);
+const getAccountBalance = () => { console.log("~~~~~~~~~~~~~~~~"); console.log(uTxOuts); return getBalance(getPublicFromWallet(), uTxOuts); }
 
 const sendTx = (address, amount) => {
     const tx = createTx(address, amount, getPrivateFromWallet(), getUTxOutList(), getMempool());
     addToMempool(tx, getUTxOutList());
     return tx;
+}
+
+const handleIncomingTx = (tx) => {
+    addToMempool(tx, getMempool());
 }
 
 module.exports = {
@@ -250,5 +270,6 @@ module.exports = {
     addBlockToChain,
     replaceChain,
     getAccountBalance,
-    sendTx
+    sendTx,
+    handleIncomingTx
 }

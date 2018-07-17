@@ -361,7 +361,6 @@ const validateBlockTxs = (txs, uTxOutList, blockIndex) => {
     const coinbaseTx = txs[0];
     if (!validateCoinbaseTx(coinbaseTx, blockIndex)) {
         console.log("Coinbase Tx is invalid");
-        return false;
     }
 
     const txIns = _(txs).map(tx => tx.txIns).flatten().value();
@@ -375,7 +374,7 @@ const validateBlockTxs = (txs, uTxOutList, blockIndex) => {
 
     // 코인베이스 트랜잭션에 대하여 체크
     const nonCoinbaseTxs = txs.slice(1);
-    return nonCoinbaseTxs.map(txs => validateTx(tx, uTxOutList)).reduce((a, b) => a + b, true);
+    return nonCoinbaseTxs.map(txs => validateTx(txs, uTxOutList)).reduce((a, b) => a + b, true);
 }
 
 
@@ -386,7 +385,7 @@ const processTxs = (tx, uTxOutList, blockIndex) => {
     if (!validateBlockTxs(tx, uTxOutList, blockIndex)) {
         return null;
     }
-    return updateUTxOuts(tx, uTxOutList);;
+    return updateUTxOuts(tx, uTxOutList);
 }
 
 
