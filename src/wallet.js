@@ -71,18 +71,45 @@ const createTxOuts = (receiverAddress, myAddress, amount, leftOverAmount) => {
         const leftOverTxOut = new TxOut(myAddress, leftOverAmount);
         return [receiverTxOut, leftOverTxOut];
     }
+}
 
+// mempool에서 트랜잭션아웃풋을 필터링
+const filterUTxOutsFromMempool = (uTxOutList, mempool) => {
+    // mempool에서 인풋으로 컨펌 대기하고 있는 tx_output을 없앤다.
+    console.log("~~~~~~~~~~~~~~");
+    console.log(mempool);
+    const txIns = _(mempool).map(tx => tx.txIns).flatten().values();
+
+    const removables = [];
+    console.log("~~~~~~~~~~~~~~~");
+    console.log(uTxOutList[0]);
+    console.log("~~~~~~~~~~~~~~~~~~~~");
+    console.log(txIns[0]);
+    for (const uTxOut of uTxOutList) {
+        const txIn = _.find(txIns, txIn => txIn.txOutIndex === uTxOut.txOutIndex && txIn.txOutId === uTxOut.txOutId)
+    }
+
+    // 이미 mempool안에 있는 tx_input 을 찾아서, removables안에 넣음. 이미 사용한거니까 없앤다.
+    if (txIn !== undefined) {
+        removables.push(uTxOut);
+    }
+
+    // 필터를 제외 - array를 가져다가 element 없이 리턴
+    // _.without([2,1,2,3], 1, 2) = [3]
+    return _.without(uTxOutList, ...removables);
 }
 
 // 트랜잭션 생성 : 받을사람 주소, 보낼 수량, 보내는사람 증명(사인), 내가 가진 잔액수량.
 // 인풋을 넣고 필요한 수량, 모든 unspent tx output을 살펴보고. 그걸 사인 안한 배열로 일단 만들고. 그다음 트랜잭션_아웃픗을 생성 하고. 마지막으로 privateKey로 사인
-const createTx = (receiverAddress, amount, privateKey, uTxOutList) => {
+const createTx = (receiverAddress, amount, privateKey, uTxOutList, mempool) => {
     const myAddress = getPublicKey(privateKey);
 
     // 내 소유의 unspent tx output list --> 내가 가진 코인 수량
     const myUTxOuts = uTxOutList.filter(uTxO => uTxO.address === myAddress);
 
-    const { includedUTxOuts, leftOverAmount } = findAmountInUTxOuts(amount, myUTxOuts);
+    const filteredUTxOuts = filterUTxOutsFromMempool(myUTxOuts, mempool);
+
+    const { includedUTxOuts, leftOverAmount } = findAmountInUTxOuts(amount, filteredUTxOuts);
 
     // 트랜잭션_아웃풋(Unspent Tx Output List)을 가지고 트랜잭션_인풋(txOutId + txOutIndex + Signature) 생성
     const toUnsignedTxIns = (uTxOut) => {

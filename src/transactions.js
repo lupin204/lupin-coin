@@ -66,7 +66,7 @@ reduce(callbackFn, initialValue_첫번째_인수로_사용되는_값)
 */
 const getTxId = (tx) => {
     const txInsContent = tx.txIns
-        .map(txIn => txIn.uTxOutId + txIn.txOutIndex)
+        .map(txIn => txIn.txOutId + txIn.txOutIndex)
         .reduce((a, b) => a + b, "");
 
     const txOutContent = tx.txOuts

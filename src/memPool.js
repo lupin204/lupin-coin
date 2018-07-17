@@ -6,6 +6,8 @@ const { validateTx } = Transactions;
 
 let mempool = [];
 
+// mempool의 DEEP COPY(완전히 새로운 obj - 복사본) 리턴
+const getMempool = () => _.cloneDeep(mempool);
 
 const getTxInsInPool = (mempool) => {
     return _(mempool).map(tx => tx.txIns).flatten().value();
@@ -49,5 +51,6 @@ const addToMempool = (tx, uTxOutList) => {
 }
 
 module.exports = {
-    addToMempool
+    addToMempool,
+    getMempool
 }

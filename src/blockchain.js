@@ -9,7 +9,7 @@ const { getBalance, getPublicFromWallet, createTx, getPrivateFromWallet } = Wall
 
 const { createCoinbaseTx, processTxs } = Transactions;
 
-const { addToMempool } = Mempool;
+const { addToMempool, getMempool } = Mempool;
 
 const BLOCK_GENERATION_INTERVAL = 10;   // 매 10초마다 코인 채굴 (bitcoin = every 10*60 seconds)
 const DIFFICULTY_ADJUSTMENT_INTERVAL = 10;  // 매 10개 블록이 채굴될때마다 난이도 조정 (bitcoin = every 2016 blocks)
@@ -56,7 +56,8 @@ const createNewBlock = () => {
         getPublicFromWallet(), 
         getNewestBlock().index + 1
     );
-    const blockData = [coinbaseTx];
+    // 채굴블록 + mempool컨펌
+    const blockData = [coinbaseTx].concat(getMempool());
     return createNewRawBlock(blockData);
 }
 
@@ -234,7 +235,7 @@ const getUTxOutList = () => _.cloneDeep(uTxOuts);
 const getAccountBalance = () => getBalance(getPublicFromWallet(), uTxOuts);
 
 const sendTx = (address, amount) => {
-    const tx = createTx(address, amount, getPrivateFromWallet(), getUTxOutList());
+    const tx = createTx(address, amount, getPrivateFromWallet(), getUTxOutList(), getMempool());
     addToMempool(tx, getUTxOutList());
     return tx;
 }
