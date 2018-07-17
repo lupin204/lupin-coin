@@ -37,7 +37,37 @@ const isTxValidForPool = (tx, mempool) => {
             return true;
         }
     }
+}
 
+const hasTxIn = (txIn, uTxOutList) => {
+    // 동일한 ID를 갖는 아웃풋과 인덱스 찾기.
+    const foundTxIn = uTxOutList.find(uTxO => uTxO.txOutId === txIn.txOutId && uTxO.txOutIndex === txIn.txOutIndex);
+
+    // 이미 컨펌된건 삭제
+    return foundTxIn !== undefined;
+}
+
+// 모든 unspent tx output
+const updateMempool = (uTxOutList) => {
+    // 무효한 트랜잭션 = U_TX_OUT_LIST에서 인풋을 찾을 수 없을때..
+    const invalidTx = [];
+
+    for (const tx of mempool) {
+        for (const txIn of tx.txIns) {
+            // 대부분은 false지만 혹시나 true가 나오면 무효한 트랜잭션이 발견된거니까 삭제처리.
+            if (!hasTxIn(txIn, uTxOutList)) {
+                invalidTxs.push(tx);
+                break;
+            }
+        }
+    }
+
+    // 이미 처리된(process) 트랜잭션 -> 삭제
+    if (invalidTxs.length > 0) {
+        mempool = _.without(mempool, ...invalidTxs);
+    }
+
+    return mempool;
 }
 
 const addToMempool = (tx, uTxOutList) => {
@@ -52,5 +82,6 @@ const addToMempool = (tx, uTxOutList) => {
 
 module.exports = {
     addToMempool,
-    getMempool
+    getMempool,
+    updateMempool
 }

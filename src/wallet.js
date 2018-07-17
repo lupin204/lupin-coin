@@ -12,7 +12,7 @@ const ec = new EC('secp256k1');
 // 파일 위치
 const privateKeyLocation = path.join(__dirname, "privateKey");
 
-const genearatePrivateKey = () => {
+const generatePrivateKey = () => {
     const keyPair = ec.genKeyPair();
     const privateKey = keyPair.getPrivate();
     return privateKey.toString(16);     // radix: hexa-decimal(16진수)
@@ -42,7 +42,7 @@ const initWallet = () => {
     if (fs.existsSync(privateKeyLocation)) {
         return;
     }
-    const newPrivateKey = genearatePrivateKey();
+    const newPrivateKey = generatePrivateKey();
     // export privateKey to file.
     fs.writeFileSync(privateKeyLocation, newPrivateKey);
 }
@@ -58,7 +58,7 @@ const findAmountInUTxOuts = (amountNeeded, myUTxOuts) => {
             return { includedUTxOuts, leftOverAmount };
         }
     }
-    throw Error("Not enoutgh founds");
+    throw Error("Not enough founds");
     return false;
 }
 
@@ -76,22 +76,16 @@ const createTxOuts = (receiverAddress, myAddress, amount, leftOverAmount) => {
 // mempool에서 트랜잭션아웃풋을 필터링
 const filterUTxOutsFromMempool = (uTxOutList, mempool) => {
     // mempool에서 인풋으로 컨펌 대기하고 있는 tx_output을 없앤다.
-    console.log("~~~~~~~~~~~~~~");
-    console.log(mempool);
-    const txIns = _(mempool).map(tx => tx.txIns).flatten().values();
+    const txIns = _(mempool).map(tx => tx.txIns).flatten().value();
 
     const removables = [];
-    console.log("~~~~~~~~~~~~~~~");
-    console.log(uTxOutList[0]);
-    console.log("~~~~~~~~~~~~~~~~~~~~");
-    console.log(txIns[0]);
-    for (const uTxOut of uTxOutList) {
+        for (const uTxOut of uTxOutList) {
         const txIn = _.find(txIns, txIn => txIn.txOutIndex === uTxOut.txOutIndex && txIn.txOutId === uTxOut.txOutId)
-    }
 
-    // 이미 mempool안에 있는 tx_input 을 찾아서, removables안에 넣음. 이미 사용한거니까 없앤다.
-    if (txIn !== undefined) {
-        removables.push(uTxOut);
+        // 이미 mempool안에 있는 tx_input 을 찾아서, removables안에 넣음. 이미 사용한거니까 없앤다.
+        if (txIn !== undefined) {
+            removables.push(uTxOut);
+        }
     }
 
     // 필터를 제외 - array를 가져다가 element 없이 리턴
