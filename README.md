@@ -15,6 +15,9 @@ Crypto-currency - coin with Node.js
     - fs
     - path
     - loadsh
+    - cors
+        - Cross Origin Resource Sharing 크로스도메인 허용
+        - CORS 관련 헤더를 편하게 설정하도록 도와주는 미들웨어
 
 - vscode extension
     - REST Client ( Huachao Mao )
@@ -66,18 +69,18 @@ Crypto-currency - coin with Node.js
         - Tx_Input = unspent_transaction_output(need to validation) + signature
             - U_Tx_Output = id(hash) + index
 
-~~~~~~~~~~~~~~~~~~~~~
+------------------------------
 
 - 블록체인에서 트랜잭션을 컨펌 하는 방법
     - 블록체인에 새로운 블록을 추가
 
 
-~~~~~~~~~~~~~~~~~~~
+------------------------------
 - 코인베이스 트랜잭션은 블록체인에 추가(push)됨.
     - 트랜잭션 검증, unspent transaction output 업데이트 후 개인지갑의 balance에 amount 추가가 필요함.
 
 
-~~~~~~~~~~~~~~~~~~~
+------------------------------
 - mempool
     - Mempool = 트랜잭션 풀 = pending transaction (box) = unconfirmed transaction
     - 이미 발생한 트랜잭션이지만, 아직 블록체인에 포함되지 않은 트랜잭션들..
@@ -86,19 +89,19 @@ Crypto-currency - coin with Node.js
 
 
 
-~~~~
+------------------------------
 #69
 - 트랜잭션 컨펌 -> U_Tx_Output_List 업데이트 -> balance 업데이트
 - 내 블록을 생성한 함수(createNewBlock) 를 가져다가 mempool 안의 모든 트랜잭션을 추가
 
 
-~~~~
+------------------------------
 - 새로운 트랜잭션을 만들때 tx_input은 utxoutput을 요구함.
 - 트랜잭션 아웃풋은 2개가 생기는데. 인풋은 항상 첫번째 아웃풋만을 참조함. 나머지는 mempool밖에 있고.
 - 그래서 트랜잭션을 만들때 mempool 밖에 있는 u_tx_output을 필터링 해야함.
 
 
-~~~~~
+------------------------------
 #72
 - 멤풀에 트랜잭션 포
 - 트랜잭션 많고 이전 거래를 삭제하지 않을때 문제 발생.
@@ -106,3 +109,35 @@ Crypto-currency - coin with Node.js
 
 - 트랜잭션은 process 되었을때 인풋 -> 아웃풋으로 변환됨!!
 - 이미 인풋과 아웃풋이 모두 있는 트랜잭션을 발견하면, 이는 mempool에서 제거 되야 함. 이미 트랜잭션이 process된거니까 삭제 되야함.
+
+
+------------------------------
+CORS 라이브러리 <https://www.npmjs.com/package/cors>
+- CORS : Cross Origin Resource Sharing - 현재 도메인과 다른 도메인으로 리소스가 요청될 경우
+- 기본원리
+  - 서버(API서버)의 응답 헤더 중에서 "Access-Control-Allow-Origins" 라는 프로퍼티가 있는데. 여기에 CORS를 허용해주는 도메인을 입력하면 된다.
+    - Access-Control-Allow-Origin: *
+    - Access-Control-Allow-Origin: http://A.com, http://B.com
+  - express서버에 적용
+    ```javascript
+    app.all('/*', (req, res, next) => {
+        res.header("Access-Control-Allow-Origin", "*");
+        res.header("Access-Control-Allow-Headers", "X-Requested-With");
+        next();
+    });
+    ```
+  - CORS 모듈 이용 (npm CORS)
+    ```javascript
+    var express = require('express');
+    var cors = require('cors');
+    var app = express();
+
+    // CORS 설정 - 모든 CORS 요청을 수락
+    app.use(cors());
+    app.get('/products/:id', function(req, res, next) {
+    })
+
+    // Route 요청 건별로 수락
+    app.get('/products/:id', cors(), function(req, res, next) {
+    })
+    ```
