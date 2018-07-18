@@ -81,15 +81,15 @@ const initSocketConnection = (ws) => {
     sendMessage(ws, getLatest());
     // 블록체인 싱크 이후에 mempool을 가져온다. (1000ms 텀)
     setTimeout(() => {
-       sendMessageToAll(ws, getAllMempool()); 
-    }, 100);
+       sendMessageToAll(getAllMempool()); 
+    }, 1000);
 
     // 채굴 등의 오랜 시간이 걸리는 작업을 하다 소켓이 커넥션이 끊기면 안되니까 1초에 한번씩 소켓을 연결
     setInterval(() => {
         if (sockets.includes(ws)) {
             sendMessage(ws, "[Keep Connection]");
         }
-    }, 1000);
+    }, 60000);
 }
 
 const parseData = (data) => {
@@ -116,7 +116,7 @@ const handleSocketMessages = (ws) => {
                 sendMessage(ws, responseAll());
                 break;
             case BLOCKCHAIN_RESPONSE:
-                const receivedBlocks = message.data; 
+                const receivedBlocks = message.data;
                 if (receivedBlocks === null) {
                     break;
                 }
@@ -126,7 +126,7 @@ const handleSocketMessages = (ws) => {
                 sendMessage(ws, returnMempool());
                 break;
             case MEMPOOL_RESPONSE:
-                const receivedTxs =  message.data;
+                const receivedTxs = message.data;
                 if (receivedTxs === null) {
                     return;
                 }

@@ -120,7 +120,7 @@ const findBlock = (index, previousHash, timestamp, data, difficulty) => {
         console.log('current nonce', nonce);
         const hash = createHash(index, previousHash, timestamp, data, difficulty, nonce);
         // TODO: check amount of zeros (hashMatchesDifficulty)
-        if (hasMatchesDifficulty(hash, difficulty)) {
+        if (hashMatchesDifficulty(hash, difficulty = 0)) {
             return new Block(index, hash, previousHash, timestamp, data, difficulty, nonce);
         } else {
             nonce++;
@@ -129,7 +129,7 @@ const findBlock = (index, previousHash, timestamp, data, difficulty) => {
 }
 
 // hash to binary
-const hasMatchesDifficulty = (hash, difficulty) => {
+const hashMatchesDifficulty = (hash, difficulty) => {
     const hashInBinary = hexToBinary(hash);
     const requiredZeros = '0'.repeat(difficulty);   // 'abc'.repeat(4) = 'abcabcabcabc'
     console.log("Trying difficulty:", difficulty, "with hash", hashInBinary);
