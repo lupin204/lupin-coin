@@ -118,9 +118,18 @@ app.get("/address/:address", (req, res) => {
   res.send({ balance });
 });
 
+/* [Comments For Electron]
 const server = app.listen(PORT, () => 
     console.log(`LupinCoin Server running on ${PORT}`)
 );
+*/
 
 initWallet();
+/* [Comments For Electron]
 startP2PServer(server);
+*/
+
+module.exports = {
+  startP2PServer,
+  app
+}
